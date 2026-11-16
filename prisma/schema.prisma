@@ -1,0 +1,142 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String            @id @default(cuid())
+  fullName     String
+  email        String            @unique
+  passwordHash String
+  role         UserRole
+  lgaId        String?
+  active       Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  auditLogs    AuditLog[]
+  visits       MonitoringVisit[]
+  lga          Lga?              @relation(fields: [lgaId], references: [id])
+}
+
+model Lga {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  code      String    @unique
+  createdAt DateTime  @default(now())
+  projects  Project[]
+  schools   School[]
+  users     User[]
+}
+
+model School {
+  id         String            @id @default(cuid())
+  name       String
+  schoolCode String            @unique
+  lgaId      String
+  community  String?
+  schoolType String?
+  latitude   Float?
+  longitude  Float?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  visits     MonitoringVisit[]
+  projects   Project[]
+  lga        Lga               @relation(fields: [lgaId], references: [id])
+
+  @@index([lgaId])
+}
+
+model Project {
+  id                 String            @id @default(cuid())
+  projectCode        String            @unique
+  title              String
+  description        String?
+  component          String
+  lgaId              String
+  schoolId           String?
+  status             ProjectStatus     @default(PLANNED)
+  approvedBudget     Decimal?          @db.Decimal(18, 2)
+  contractAmount     Decimal?          @db.Decimal(18, 2)
+  startDate          DateTime?
+  expectedCompletion DateTime?
+  actualCompletion   DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  visits             MonitoringVisit[]
+  lga                Lga               @relation(fields: [lgaId], references: [id])
+  school             School?           @relation(fields: [schoolId], references: [id])
+
+  @@index([lgaId, status])
+}
+
+model MonitoringVisit {
+  id              String      @id @default(cuid())
+  visitDate       DateTime
+  lgaId           String
+  schoolId        String?
+  projectId       String?
+  officerId       String
+  latitude        Float?
+  longitude       Float?
+  findings        String
+  recommendations String?
+  status          VisitStatus @default(DRAFT)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  officer         User        @relation(fields: [officerId], references: [id])
+  project         Project?    @relation(fields: [projectId], references: [id])
+  school          School?     @relation(fields: [schoolId], references: [id])
+
+  @@index([lgaId, visitDate])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  STATE_COORDINATOR
+  PROJECT_MANAGER
+  FINANCE_OFFICER
+  PROCUREMENT_OFFICER
+  M_AND_E_OFFICER
+  SAFEGUARDING_OFFICER
+  LGA_OFFICER
+  SCHOOL_HEAD
+  FIELD_OFFICER
+  AUDITOR
+  EXECUTIVE_VIEWER
+}
+
+enum ProjectStatus {
+  PLANNED
+  NOT_STARTED
+  ONGOING
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum VisitStatus {
+  DRAFT
+  SUBMITTED
+  REVIEWED
+  REJECTED
+}
