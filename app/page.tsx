@@ -4,6 +4,7 @@ import {
   GraduationCap, LayoutDashboard, MapPinned, ShieldCheck, Users, Wallet
 } from "lucide-react";
 import {useState} from "react";
+import {useRouter} from "next/navigation";
 const menu = [
   ["Overview", LayoutDashboard],
   ["Schools", GraduationCap],
@@ -26,6 +27,7 @@ const cards = [
 
 export default function Home() {
   const [activePage, setActivePage] = useState("Overview");
+  const router = useRouter();
   return (
     <main className="min-h-screen md:flex">
       <aside className="w-full bg-[#102b4e] p-5 text-white md:min-h-screen md:w-[250px]">
@@ -39,7 +41,15 @@ export default function Home() {
   <button
     key={label}
     type="button"
-    onClick={() => setActivePage(label)}
+    onClick={() => {
+  if (label === "Overview") {
+    router.push("/");
+  } else if (label === "Schools") {
+    router.push("/schools");
+  } else {
+    setActivePage(label);
+  }
+}}
     className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-left ${
       activePage === label
         ? "bg-white/20 text-white"
