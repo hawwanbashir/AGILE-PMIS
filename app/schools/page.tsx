@@ -144,6 +144,48 @@ function handleEdit(school: School) {
   });
 }
 
+async function handleDelete(school: School) {
+  const confirmed = window.confirm(
+    `Are you sure you want to delete ${school.name}? This action cannot be undone.`
+  );
+
+  if (!confirmed) return;
+
+  setError("");
+  setMessage("");
+
+  try {
+    const response = await fetch(`/api/schools/${school.id}`, {
+      method: "DELETE",
+    });
+
+    const data: { error?: string; message?: string } =
+      await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to delete school.");
+    }
+
+    if (editingSchoolId === school.id) {
+      setEditingSchoolId(null);
+      setName("");
+      setSchoolCode("");
+      setLgaId("");
+      setCommunity("");
+      setSchoolType("Primary");
+    }
+
+    setMessage(data.message || "School deleted successfully!");
+
+    await loadData();
+  } catch (err) {
+    setError(
+      err instanceof Error ? err.message : "Unable to delete school."
+    );
+  }
+}
+
+
 const filteredSchools = schools.filter((school) => {
   const search = searchTerm.toLowerCase();
 
@@ -352,13 +394,23 @@ const filteredSchools = schools.filter((school) => {
                     <td className="p-3">{school.community || "-"}</td>
                     <td className="p-3">{school.schoolType || "-"}</td>
                     <td className="p-3">
+  <div className="flex gap-2">
   <button
     type="button"
     onClick={() => handleEdit(school)}
-    className="rounded-lg bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
+    className="rounded-lg bg-blue-600 px-3 py-1 text-white"
   >
     Edit
   </button>
+
+  <button
+    type="button"
+    onClick={() => handleDelete(school)}
+    className="rounded-lg bg-red-600 px-3 py-1 text-white"
+  >
+    Delete
+  </button>
+</div>
 </td>
                   </tr>
                   

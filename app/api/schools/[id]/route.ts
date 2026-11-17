@@ -40,6 +40,7 @@ export async function PUT(
       where: { id },
     });
 
+    
     if (!existingSchool) {
       return NextResponse.json(
         { error: "School not found." },
@@ -104,6 +105,33 @@ export async function DELETE(
       );
     }
 
+   
+    const relatedRecords = await prisma.school.findUnique({
+  where: { id },
+  select: {
+    _count: {
+      select: {
+        projects: true,
+        visits: true,
+      },
+    },
+  },
+});
+
+if (
+  relatedRecords &&
+  (relatedRecords._count.projects > 0 ||
+    relatedRecords._count.visits > 0)
+) {
+  return NextResponse.json(
+    {
+      error:
+        "This school cannot be deleted because it has related projects or monitoring visits.",
+    },
+    { status: 409 }
+  );
+}
+   
     await prisma.school.delete({
       where: { id },
     });
